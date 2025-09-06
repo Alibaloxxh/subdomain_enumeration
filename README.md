@@ -8,6 +8,7 @@ Minimal subdomain enumeration CLI:
 Usage:
   python3 subenum.py live -d example.com --probe-http
 
-![Uploading Team Nexus.png…]()
+<img width="3200" height="2400" alt="Team Nexus" src="https://github.com/user-attachments/assets/bcd7bf70-289d-4165-b934-ac86b43718a8" />
+
 
 Team Nexus
