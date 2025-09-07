@@ -1,9 +1,9 @@
-# subenum
+SubNex
 
 Minimal subdomain enumeration CLI:
-- Passive discovery (crt.sh)
-- Async DNS resolution (A/AAAA)
-- Optional HTTP(S) probe
+1. Subdomain Enumeration
+2. Live Subdomain Identification
+3. IP Extraction
 
 Usage:
   python3 subenum.py live -d example.com --probe-http
