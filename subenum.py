@@ -1,21 +1,15 @@
-#!/usr/bin/env python3#!/usr/bin/env python3
-import typer
-from rich.console import Console
+#!/usr/bin/env python3
 import requests
 import socket
+import sys
 
-app = typer.Typer(help="subenum - minimal subdomain enumeration CLI")
-console = Console()
-
-
-def fetch_subdomains(domain: str):
-    """Fetch subdomains from crt.sh"""
-    console.print(f"[cyan][+] Fetching subdomains for {domain} from crt.sh...[/cyan]")
+def fetch_subdomains(domain):
+    print(f"[+] Fetching subdomains for {domain} from crt.sh...")
     url = f"https://crt.sh/?q=%25.{domain}&output=json"
     try:
         response = requests.get(url, timeout=10)
         if response.status_code != 200:
-            console.print("[red][-] Error fetching data from crt.sh[/red]")
+            print("[-] Error fetching data from crt.sh")
             return []
         data = response.json()
         subdomains = set()
@@ -27,41 +21,45 @@ def fetch_subdomains(domain: str):
                         subdomains.add(sub.strip())
         return list(subdomains)
     except Exception as e:
-        console.print(f"[red][-] Exception: {e}[/red]")
+        print(f"[-] Exception: {e}")
         return []
 
-
 def resolve_subdomains(subdomains):
-    """Resolve subdomains to IPs"""
-    console.print("[cyan][+] Resolving subdomains...[/cyan]")
+    print("[+] Resolving subdomains...")
     live = []
     for sub in subdomains:
         try:
             ip = socket.gethostbyname(sub)
-            console.print(f"[green][LIVE][/green] {sub} -> {ip}")
+            print(f"[LIVE] {sub} -> {ip}")
             live.append((sub, ip))
         except socket.gaierror:
+            print(f"[-] Dead: {sub}")
             pass
     return live
 
-
-@app.command()
-def live(
-    domain: str = typer.Option(..., "-d", "--domain", help="Target domain"),
-    probe_http: bool = typer.Option(False, "--probe-http", help="Probe HTTP/HTTPS for responsive hosts"),
-    concurrency: int = typer.Option(50, "-c", "--concurrency", help="Async concurrency"),
-):
-    """Perform live subdomain enumeration"""
-    console.print(f"[bold green]Enumerating {domain}[/bold green]")
-
-    subs = fetch_subdomains(domain)
-    if not subs:
-        console.print("[red][-] No subdomains found.[/red]")
-        raise typer.Exit()
-
-    live_hosts = resolve_subdomains(subs)
-    console.print(f"\n[bold cyan][+] Found {len(live_hosts)} live subdomains.[/bold cyan]")
-
-
 if __name__ == "__main__":
-    app()
+    if len(sys.argv) != 2:
+        print(f"Usage: python3 {sys.argv[0]} <domain>")
+        sys.exit(1)
+
+    domain = sys.argv[1]
+    subs = fetch_subdomains(domain)
+
+    if not subs:
+        print("[-] No subdomains found.")
+        sys.exit(0)
+
+    # Save all extracted subdomains
+    with open("extracted_subdomains.txt", "w") as f:
+        for sub in subs:
+            f.write(sub + "\n")
+    print(f"[+] Saved {len(subs)} subdomains to extracted_subdomains.txt")
+
+    # Resolve and save live subdomains
+    live = resolve_subdomains(subs)
+    with open("live_subdomains.txt", "w") as f:
+        for sub, ip in live:
+            f.write(f"{sub} -> {ip}\n")
+    print(f"[+] Saved {len(live)} live subdomains to live_subdomains.txt")
+
+    print(f"\n[+] Found {len(live)} live subdomains out of {len(subs)} total.")
